@@ -31,6 +31,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        Log.d("MainActivity", "Running onCreate()")
+
         val searchBoxET: EditText = findViewById(R.id.et_search_box)
         val searchBtn: Button = findViewById(R.id.btn_search)
 
@@ -50,6 +52,31 @@ class MainActivity : AppCompatActivity() {
                 searchResultsListRV.scrollToPosition(0)
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.d("MainActivity", "Running onStart()")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("MainActivity", "Running onResume()")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d("MainActivity", "Running onPause()")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("MainActivity", "Running onStop()")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("MainActivity", "Running onDestroy()")
     }
 
     private fun doRepoSearch(query: String) {
