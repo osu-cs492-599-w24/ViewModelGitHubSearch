@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.progressindicator.CircularProgressIndicator
@@ -20,7 +21,9 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
-    private val gitHubService = GitHubService.create()
+    private val viewModel: GitHubSearchViewModel by viewModels()
+
+//    private val gitHubService = GitHubService.create()
     private val adapter = GitHubRepoListAdapter()
 
     private lateinit var searchResultsListRV: RecyclerView
@@ -45,10 +48,43 @@ class MainActivity : AppCompatActivity() {
 
         searchResultsListRV.adapter = adapter
 
+        viewModel.searchResults.observe(this) {
+            searchResults -> adapter.updateRepoList(searchResults)
+        }
+
+        viewModel.loadingStatus.observe(this) {
+            loadingStatus ->
+                when (loadingStatus) {
+                    LoadingStatus.LOADING -> {
+                        searchResultsListRV.visibility = View.INVISIBLE
+                        loadingIndicator.visibility = View.VISIBLE
+                        searchErrorTV.visibility = View.INVISIBLE
+                    }
+                    LoadingStatus.ERROR -> {
+                        searchResultsListRV.visibility = View.INVISIBLE
+                        loadingIndicator.visibility = View.INVISIBLE
+                        searchErrorTV.visibility = View.VISIBLE
+                    }
+                    else -> {
+                        searchResultsListRV.visibility = View.VISIBLE
+                        loadingIndicator.visibility = View.INVISIBLE
+                        searchErrorTV.visibility = View.INVISIBLE
+                    }
+                }
+        }
+
+        viewModel.error.observe(this) {
+            error -> searchErrorTV.text = getString(
+                R.string.search_error,
+                error
+            )
+        }
+
         searchBtn.setOnClickListener {
             val query = searchBoxET.text.toString()
             if (!TextUtils.isEmpty(query)) {
-                doRepoSearch(query)
+//                doRepoSearch(query)
+                viewModel.loadSearchResults(query)
                 searchResultsListRV.scrollToPosition(0)
             }
         }
@@ -79,33 +115,33 @@ class MainActivity : AppCompatActivity() {
         Log.d("MainActivity", "Running onDestroy()")
     }
 
-    private fun doRepoSearch(query: String) {
-        loadingIndicator.visibility = View.VISIBLE
-        searchResultsListRV.visibility = View.INVISIBLE
-        searchErrorTV.visibility = View.INVISIBLE
-        gitHubService.searchRepositories(query).enqueue(object : Callback<GitHubSearchResults> {
-            override fun onResponse(call: Call<GitHubSearchResults>, response: Response<GitHubSearchResults>) {
-                loadingIndicator.visibility = View.INVISIBLE
-                if (response.isSuccessful) {
-                    val moshi = Moshi.Builder().build()
-                    val jsonAdapter: JsonAdapter<GitHubSearchResults> =
-                        moshi.adapter(GitHubSearchResults::class.java)
-                    adapter.updateRepoList(response.body()?.items)
-                    searchResultsListRV.visibility = View.VISIBLE
-                } else {
-                    searchErrorTV.visibility = View.VISIBLE
-                    searchErrorTV.text = getString(
-                        R.string.search_error,
-                        response.errorBody()?.string() ?: "unknown error"
-                    )
-                }
-            }
-
-            override fun onFailure(call: Call<GitHubSearchResults>, t: Throwable) {
-                loadingIndicator.visibility = View.INVISIBLE
-                searchErrorTV.visibility = View.VISIBLE
-                searchErrorTV.text = getString(R.string.search_error, t.message)
-            }
-        })
-    }
+//    private fun doRepoSearch(query: String) {
+//        loadingIndicator.visibility = View.VISIBLE
+//        searchResultsListRV.visibility = View.INVISIBLE
+//        searchErrorTV.visibility = View.INVISIBLE
+//        gitHubService.searchRepositories(query).enqueue(object : Callback<GitHubSearchResults> {
+//            override fun onResponse(call: Call<GitHubSearchResults>, response: Response<GitHubSearchResults>) {
+//                loadingIndicator.visibility = View.INVISIBLE
+//                if (response.isSuccessful) {
+//                    val moshi = Moshi.Builder().build()
+//                    val jsonAdapter: JsonAdapter<GitHubSearchResults> =
+//                        moshi.adapter(GitHubSearchResults::class.java)
+//                    adapter.updateRepoList(response.body()?.items)
+//                    searchResultsListRV.visibility = View.VISIBLE
+//                } else {
+//                    searchErrorTV.visibility = View.VISIBLE
+//                    searchErrorTV.text = getString(
+//                        R.string.search_error,
+//                        response.errorBody()?.string() ?: "unknown error"
+//                    )
+//                }
+//            }
+//
+//            override fun onFailure(call: Call<GitHubSearchResults>, t: Throwable) {
+//                loadingIndicator.visibility = View.INVISIBLE
+//                searchErrorTV.visibility = View.VISIBLE
+//                searchErrorTV.text = getString(R.string.search_error, t.message)
+//            }
+//        })
+//    }
 }
